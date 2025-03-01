@@ -4,90 +4,101 @@ import pandas as pd
 
 from srt_fracture_control import ReservoirSimulator, PressureDeviationDetector, RateController
 from matplotlib.ticker import FuncFormatter
-from scipy.interpolate import PchipInterpolator as interpFunc
 from sklearn.linear_model import LinearRegression
 
 
 def main():
+    """
+    Main function for testing the induced fracture monitoring and control algorithms with the control-oriented reservoir simulator.
+
+    """
     # Define step rate test parameters
-    dQ = - 960.0 / 24 / 3600  # injection rate step, m3/s
-    dT = 10  # step duration, h
-    N = 10  # number of steps in step rate test
+    step_dq = - 960.0 / 24 / 3600  # injection rate step, m3/s
+    step_dt = 10 * 3600  # step duration, s
+    n_steps = 10  # number of steps in step rate test
+    min_dq = - 120.0 / 3600 / 24  # minimum rate step, m3/s
+
+    # Set simulation maximum time and time step. The maximum simulation time should be at least twice the step rate test
+    # total duration, to allow for extended steps when fractures are detected
+    t_max = step_dt * n_steps * 2.0  # total simulation time, s
     dt = 10  # time step of main loop, s
 
-    sim = ReservoirSimulator(dt, usePressureDependentPermeability=True)
-    controller = RateController(dQ, dT * 3600, N, min_dQ=-120.0 / 3600 / 24)
-    detector = PressureDeviationDetector(dQ)
+    # Create ReservoirSimulator, RateController and PressureDeviationDetector objects
+    sim = ReservoirSimulator(dt, t_max, use_pressure_dependent_permeability=True)
+    controller = RateController(step_dq, step_dt, n_steps, min_dq)
+    detector = PressureDeviationDetector(step_dq)
 
-    showPlot = True
+    # Plot settings
+    show_plot = True
     plt.ion()
     plt.rcParams.update({'font.size': 20})
     fig, ax = plt.subplots(2, 2, figsize=(20, 20))
 
-    # main loop for the simulation
-    for k in range(sim.Nt):
+    # Main loop for the simulation
+    index_step_start = 0
+    for k in range(sim.nt):
         if controller.return_to_previous_injection_step == False and detector.check_for_deviations(
-                controller.step_index, sim.t[
-                                       detector.index_step_start:k] / 3600.0,
-                sim.P_bh[
-                detector.index_step_start:k] / 1e5,
-                sim.Q[k - 1]):
+                controller.step_index, sim.t[index_step_start:k] / 3600.0,
+                sim.p_bh[index_step_start:k] / 1e5,
+                sim.q):
             controller.react_to_deviation(sim.t[k])
 
         if sim.t[k] >= controller.step_end_time:
-            # update pressure response for detection of deviations
-            detector.update_pressure_rate_history(controller.step_index, sim.t[detector.index_step_start:k] / 3600.0,
-                                                  sim.Q[k - 1], np.array(sim.P_bh[detector.index_step_start:k] / 1e5))
+            # when the step has been completed, update the detector internal variables
+            detector.update_pressure_rate_history(sim.t[index_step_start:k] / 3600.0,
+                                                  sim.q, sim.p_bh[index_step_start:k] / 1e5)
 
-            detector.calculate_Bourdet_derivative(detector.superposition_step_index,
-                                                  sim.t[detector.index_step_start:k] / 3600.0,
-                                                  sim.Q[k - 1], np.array(sim.P_bh[detector.index_step_start:k] / 1e5),
-                                                  storeResults=True)
+            detector.calculate_bourdet_derivative(detector.superposition_step_index,
+                                                  sim.t[index_step_start:k] / 3600.0,
+                                                  sim.q, sim.p_bh[index_step_start:k] / 1e5,
+                                                  store_results=True)
 
             detector.update_safe_operating_envelope()
-            controller.perform_new_injection_step()
+            # update control parameters
+            controller.update_parameters_for_next_step()
 
-            Qs = []
-            Ps = []
-            for i in range(len(detector.Q_allSteps_PQ)):
-                Qs.append(np.abs(detector.Q_allSteps_PQ[i]) * 3600 * 24)
-                Ps.append(np.abs(detector.P_allSteps_PQ[i]))
+            qs = []
+            ps = []
+            for i in range(len(detector.q_all_steps_pq)):
+                qs.append(np.abs(detector.q_all_steps_pq[i]) * 3600 * 24)
+                ps.append(np.abs(detector.p_all_steps_pq[i]))
 
-            # fit a linear regression to the pressure-rate (p-Q) plot
-            if len(detector.Q_allSteps_PQ) == 2:
-                reg = LinearRegression().fit(np.array(Qs).reshape(-1, 1), np.array(Ps))
-            if len(detector.Q_allSteps_PQ) >= 2:
-                pQ_linear_reg = reg.predict(np.array(Qs).reshape(-1, 1))
+            # fit a linear regression to the pressure-rate (p-q) plot
+            if len(detector.q_all_steps_pq) == 2:
+                reg = LinearRegression().fit(np.array(qs).reshape(-1, 1), np.array(ps))
+            if len(detector.q_all_steps_pq) >= 2:
+                pq_linear_reg = reg.predict(np.array(qs).reshape(-1, 1))
 
-            if showPlot:
+            if show_plot:
                 for i in range(ax.shape[0]):
                     ax[i, 1].cla()
 
-                for i in range(len(detector.dP_allSteps)):
+                for i in range(len(detector.dp_all_steps)):
                     c = next(ax[1, 1]._get_lines.prop_cycler)['color']
-                    dt = detector.t_allSteps_loglog_plot[i]
-                    dP = detector.dP_allSteps[i]
-                    dP_der = detector.dP_der_allSteps[i]
-                    idx_nan = np.argwhere(np.isnan(detector.dP_der_allSteps[0]))
+                    t_loglog = detector.t_all_steps_loglog_plot[i]
+                    dp = detector.dp_all_steps[i]
+                    dp_der = detector.dp_der_all_steps[i]
+                    idx_nan = np.argwhere(np.isnan(detector.dp_der_all_steps[0]))
 
-                    ax[1, 1].loglog(dt[idx_nan[1][0] + 1:idx_nan[2][0]], dP[idx_nan[1][0] + 1:idx_nan[2][0]], color=c,
+                    ax[1, 1].loglog(t_loglog[idx_nan[1][0] + 1:idx_nan[2][0]], dp[idx_nan[1][0] + 1:idx_nan[2][0]],
+                                    color=c,
                                     linestyle='None', marker='x', label='Step_' + str(i + 1))
-                    ax[1, 1].loglog(dt[idx_nan[1][0] + 1:idx_nan[2][0]], dP_der[idx_nan[1][0] + 1:idx_nan[2][0]],
+                    ax[1, 1].loglog(t_loglog[idx_nan[1][0] + 1:idx_nan[2][0]], dp_der[idx_nan[1][0] + 1:idx_nan[2][0]],
                                     color=c, linestyle='None', marker='o', label='Step_' + str(i + 1))
 
-                    ax[0, 1].plot(np.abs(detector.Q_allSteps_PQ[i]) * 3600 * 24, detector.P_allSteps_PQ[i], color=c,
+                    ax[0, 1].plot(np.abs(detector.q_all_steps_pq[i]) * 3600 * 24, detector.p_all_steps_pq[i], color=c,
                                   linestyle='None', marker='o', label='Step_' + str(i + 1))
 
-                ax[1, 1].plot(detector.dP_der_t_soe, detector.dP_der_upper_bound, 'k--', label='SOE Limits')
-                ax[1, 1].plot(detector.dP_der_t_soe, detector.dP_der_lower_bound, 'k--')
-                ax[1, 1].plot(detector.dP_der_t_ref, detector.dP_der_ref, 'k-', linewidth=2.0, label='Reference')
+                ax[1, 1].plot(detector.dp_der_t_soe, detector.dp_der_upper_bound, 'k--', label='SOE Limits')
+                ax[1, 1].plot(detector.dp_der_t_soe, detector.dp_der_lower_bound, 'k--')
+                ax[1, 1].plot(detector.dp_der_t_ref, detector.dp_der_ref, 'k-', linewidth=2.0, label='Reference')
 
                 h, l = ax[1, 1].get_legend_handles_labels()
                 ph = [plt.plot([], marker="", ls="")[0]] * 2
 
                 handles = ph[:1] + h[::2] + ph[1:] + h[1::2]
                 labels = ["Pressure"] + l[::2] + ["Derivative"] + l[1::2]
-                leg = ax[1, 1].legend(handles, labels, ncol=2, fontsize=16)
+                ax[1, 1].legend(handles, labels, ncol=2, fontsize=16)
 
                 ax[1, 1].set_xlabel('Time [hr]')
                 ax[1, 1].set_ylabel('Pressure and Derivative [bar]')
@@ -99,22 +110,22 @@ def main():
                 ax[1, 1].xaxis.set_major_formatter(formatter)
                 ax[1, 1].yaxis.set_major_formatter(formatter)
 
-                if len(Qs) > 1:
-                    ax[0, 1].plot(Qs, pQ_linear_reg, 'k')
+                if len(qs) > 1:
+                    ax[0, 1].plot(qs, pq_linear_reg, 'k')
                 ax[0, 1].set_xlabel('Rate [$m^3$/D]')
                 ax[0, 1].set_ylabel('Pressure [bar]')
                 ax[0, 1].legend(fontsize=16)
                 ax[0, 1].grid(visible=True)
 
                 c1 = next(ax[0, 0]._get_lines.prop_cycler)['color']
-                ax[1, 0].plot(sim.t[detector.index_step_start:] / 3600, sim.Q[detector.index_step_start:] * 3600 * 24,
+                ax[1, 0].plot(sim.t[index_step_start:] / 3600, sim.q_hist[index_step_start:] * 3600 * 24,
                               color=c1, label='Step_' + str(i + 1))
                 ax[1, 0].set_ylabel('Rate [$m^3$/D]')
                 ax[1, 0].set_xlabel('Elapsed Time [hr]')
                 ax[1, 0].legend(fontsize=16)
                 ax[1, 0].grid(visible=True)
 
-                ax[0, 0].plot(sim.t[detector.index_step_start:] / 3600, sim.P_bh[detector.index_step_start:] / 1e5,
+                ax[0, 0].plot(sim.t[index_step_start:] / 3600, sim.p_bh[index_step_start:] / 1e5,
                               color=c1, label='Step_' + str(i + 1))
                 ax[0, 0].set_ylabel('Pressure [bar]')
                 ax[0, 0].set_xlabel('Time [hr]')
@@ -124,30 +135,28 @@ def main():
                 fig.tight_layout()
                 fig.canvas.flush_events()
 
-            detector.index_step_start = k
+            index_step_start = k
 
-            if controller.step_index > controller.N_steps:
+            if controller.step_index > controller.n_steps:
                 # write simulation results to files and exit main loop
                 sim.export_pressure_and_rate_to_csv('PressureAndRateHistory')
                 sim.export_pressure_and_rate_to_excel('PressureAndRateHistory')
-                detector.export_loglog_pressure_and_derivative_to_excel('PressureAndDerivative')
+                detector.export_pressure_and_derivative_to_excel('PressureAndDerivative')
                 break
 
-        if sim.useRateLimitation:
-            sim.Q_inj = sim.Q_inj + sim.dt / 10 * (controller.Q_inj - sim.Q_inj)
-        else:
-            sim.Q_inj = controller.Q_inj
-
-        sim.Q[k + 1] = sim.Q_inj
         # solve for the next time step
-        sim.P[:, k + 1], sim.P_bh[k + 1] = sim.step(sim.P[:, k], dt=sim.dt)
+        sim.p[:, k + 1], sim.p_bh[k + 1] = sim.step(sim.p[:, k], controller.q_inj)
+        sim.q_hist[k + 1] = sim.q
 
+    # Plot the entire pressure and rate history from the simulation
     fig, ax = plt.subplots(2, 1, figsize=(18, 12))
-    ax[0].plot(sim.t / 3600, sim.P_bh / 1e5, 'b')
-    ax[1].plot(sim.t / 3600, sim.Q * 3600 * 24, 'b')
+    ax[0].plot(sim.t / 3600, sim.p_bh / 1e5, 'b')
+    ax[1].plot(sim.t / 3600, sim.q_hist * 3600 * 24, 'b')
     ax[0].set_ylabel('Pressure (bar)')
     ax[1].set_ylabel('Rate ($m^3$/D)')
     ax[1].set_xlabel('Time (h)')
+    ax[0].grid(visible=True)
+    ax[1].grid(visible=True)
 
 
 if __name__ == "__main__":
