@@ -6,7 +6,7 @@ class ReservoirSimulator:
     """
     Create ReservoirSimulator class for transient, single-phase reservoir model with pressure-dependent permeability.
 
-    The class provides methods for solving the pressure diffusivity equation for both constant and pressure-dependent
+    The class provides methods for solving the radial diffusivity equation for both constant and pressure-dependent
     permeability.
 
     Attributes
@@ -83,11 +83,11 @@ class ReservoirSimulator:
     solve_tdma():
         Solve a tridiagonal system of equations using the TDMA algorithm.
     step():
-        Solve the pressure diffusivity equation for one time step.
+        Solve the radial diffusivity equation for one time step.
     solve_one_step_constant_permeability():
-        Solve the radial pressure diffusivity equation with constant permeability for one time step.
+        Solve the radial diffusivity equation with constant permeability for one time step.
     solve_one_step_pressure_dependent_permeability():
-        Solve the radial pressure diffusivity equation with pressure-dependent permeability for one time step.
+        Solve the radial diffusivity equation with pressure-dependent permeability for one time step.
     export_pressure_and_rate_to_csv():
         Export simulated well bottom-hole pressure and rate history to csv format.
     export_pressure_and_rate_to_excel():
@@ -224,9 +224,9 @@ class ReservoirSimulator:
 
     def step(self, p0, q_c):
         """
-        Solve the pressure diffusivity equation for one step.
+        Solve the radial diffusivity equation for one step.
 
-        This function solves the pressure diffusivity equation for one time step. It takes the rate command as input and
+        This function solves the radial diffusivity equation for one time step. It takes the rate command as input and
         passes it to the solver. If the use_rate_limitation parameter is True, it applies a low-pass filter on the rate
         command before passing it to the solver. The function chooses which solver to use based on the value of the
         use_pressure_dependent_permeability parameter, and proceeds into the corresponding solver.
@@ -251,9 +251,9 @@ class ReservoirSimulator:
 
     def solve_one_step_constant_permeability(self, p0):
         """
-        Solve the radial pressure diffusivity equation with constant permeability for one time step.
+        Solve the radial diffusivity equation with constant permeability for one time step.
 
-        This function solves the radial pressure diffusivity equation for one time step for constant reservoir permeability.
+        This function solves the radial diffusivity equation for one time step for constant reservoir permeability.
         The diffusivity equation is discretized using the Crank-Nicolson finite difference method.
         (https://en.wikipedia.org/wiki/Crank-Nicolson_method)
 
@@ -326,9 +326,9 @@ class ReservoirSimulator:
 
     def solve_one_step_pressure_dependent_permeability(self, p0):
         """
-        Solve the radial pressure diffusivity equation with pressure-dependent permeability for one time step.
+        Solve the radial diffusivity equation with pressure-dependent permeability for one time step.
 
-        This function solves the radial pressure diffusivity equation for one time step for pressure-dependent reservoir
+        This function solves the radial diffusivity equation for one time step for pressure-dependent reservoir
         permeability. The diffusivity equation is solved using the Crank-Nicolson finite difference method.
         (https://en.wikipedia.org/wiki/Crank-Nicolson_method)
 
@@ -453,4 +453,4 @@ class ReservoirSimulator:
 
         writer = pd.ExcelWriter(f'{name}.xlsx', engine='openpyxl')
         df.to_excel(writer, index=False)
-        writer.save()
+        writer.close()

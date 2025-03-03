@@ -392,4 +392,4 @@ class PressureDeviationDetector:
                                "Pressure derivative (bar)": self.dp_der_all_steps[i].reshape(-1)}).dropna()
             sheet_name = 'Step_' + str(i + 1)
             df.to_excel(writer, sheet_name=f'{sheet_name}', index=False)
-        writer.save()
+        writer.close()
