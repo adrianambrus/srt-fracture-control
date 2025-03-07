@@ -37,20 +37,20 @@ class PressureDeviationDetector:
         1d array of time values for the reference transient, in hours.
     dp_der_t_soe: np.array
         1d array of time values for the safe operating envelope, in hours.
+    q_ref: float
+        Reference rate in m^3/s used for normalization of pressure transients. Sign convention is negative for injection.
+    max_number_of_steps_for_reference_transient: int
+        Maximum number of steps in the step rate test used for computing the reference transient derivative.
     detection_interval_start: float
         Time interval relative to the start of a transient when detection of deviations should start, in hours.
+    detection_margin: float
+        Log-scale margin used for deviation detection, relative to the reference transient.
     deviation_check_period: float
         Time period for checking deviations in hours.
     last_deviation_check_time: float
         Time relative to the start of a transient when the last deviation check occurred, in hours.
-    max_number_of_steps_for_reference_transient: int
-        Maximum number of steps in the step rate test used for computing the reference transient derivative.
     weight_for_averaging: float
         Weight used for averaging the pressure derivative for the latest transient with the reference derivative.
-    detection_margin: float
-        Log-scale margin used for deviation detection, relative to the reference transient.
-    q_ref: float
-        Reference rate in m^3/s used for normalization of pressure transients. Sign convention is negative for injection.
     q_previous_step: float
         Rate at the previous step in m^3/s.
     deviation_detected: boolean
@@ -74,7 +74,10 @@ class PressureDeviationDetector:
 
     def __init__(
             self,
-            q_ref=-50.0 / 3600
+            q_ref=-50.0 / 3600,
+            max_number_of_steps_for_reference_transient=3,
+            detection_interval_start=1.0,
+            detection_margin=0.2
     ):
         self.t_start_all_steps = []
         self.q_all_steps = []
@@ -88,13 +91,13 @@ class PressureDeviationDetector:
         self.dp_der_upper_bound = []
         self.dp_der_t_ref = []
         self.dp_der_t_soe = []
-        self.detection_interval_start = 1.0  # hours
-        self.deviation_check_period = 0.1  # hours
-        self.last_deviation_check_time = 0  # hours
-        self.max_number_of_steps_for_reference_transient = 3
-        self.weight_for_averaging = 0.5
-        self.detection_margin = 0.2
         self.q_ref = q_ref
+        self.max_number_of_steps_for_reference_transient = max_number_of_steps_for_reference_transient
+        self.detection_interval_start = detection_interval_start
+        self.detection_margin = detection_margin
+        self.deviation_check_period = 0.1
+        self.last_deviation_check_time = 0
+        self.weight_for_averaging = 0.5
         self.q_previous_step = 0
         self.deviation_detected = False
         self.superposition_step_index = 0

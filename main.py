@@ -14,10 +14,16 @@ def main():
 
     """
     # Define step rate test parameters
-    step_dq = - 960.0 / 24 / 3600  # injection rate step, m3/s
+    step_dq = - 960.0 / 24 / 3600  # injection rate step, m^3/s
     step_dt = 10 * 3600  # step duration, s
     n_steps = 10  # number of steps in step rate test
-    min_dq = - 120.0 / 3600 / 24  # minimum rate step, m3/s
+    min_dq = - 120.0 / 3600 / 24  # minimum rate step, m^3/s
+
+    # Define parameters for deviation detector
+    q_ref = step_dq # reference rate, m^3/s
+    max_steps_reference_transient = 3
+    detection_interval_start = 1.0 # time in log-log plot when detection of deviations should start, hours
+    detection_margin = 0.2 # log scale margin for detection of pressure derivative deviation
 
     # Set simulation maximum time and time step. The maximum simulation time should be at least twice the step rate test
     # total duration, to allow for extended steps when fractures are detected
@@ -44,7 +50,7 @@ def main():
                              reservoir_pressure, well_radius, outer_radius, thickness, skin, wellbore_storage,
                              fracture_opening_pressure, fracture_half_length, use_pressure_dependent_permeability=True)
     controller = RateController(step_dq, step_dt, n_steps, min_dq)
-    detector = PressureDeviationDetector(step_dq)
+    detector = PressureDeviationDetector(q_ref,max_steps_reference_transient,detection_interval_start,detection_margin)
 
     # Plot settings
     show_plot = True
