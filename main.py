@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from itertools import cycle
 
 from srt_fracture_control import ReservoirSimulator, PressureDeviationDetector, RateController
 from matplotlib.ticker import FuncFormatter
@@ -31,8 +32,9 @@ def main():
     # Plot settings
     show_plot = True
     plt.ion()
-    plt.rcParams.update({'font.size': 20})
+    plt.rcParams.update({'font.size': 14})
     fig, ax = plt.subplots(2, 2, figsize=(20, 20))
+    colors_linear_plots = cycle(ax[0, 0]._get_lines._cycler_items)
 
     # Main loop for the simulation
     index_step_start = 0
@@ -70,11 +72,12 @@ def main():
                 pq_linear_reg = reg.predict(np.array(qs).reshape(-1, 1))
 
             if show_plot:
+                colors_loglog_plot = cycle(ax[1, 1]._get_lines._cycler_items)
                 for i in range(ax.shape[0]):
                     ax[i, 1].cla()
 
                 for i in range(len(detector.dp_all_steps)):
-                    c = next(ax[1, 1]._get_lines.prop_cycler)['color']
+                    c = next(colors_loglog_plot)['color']
                     t_loglog = detector.t_all_steps_loglog_plot[i]
                     dp = detector.dp_all_steps[i]
                     dp_der = detector.dp_der_all_steps[i]
@@ -98,7 +101,7 @@ def main():
 
                 handles = ph[:1] + h[::2] + ph[1:] + h[1::2]
                 labels = ["Pressure"] + l[::2] + ["Derivative"] + l[1::2]
-                ax[1, 1].legend(handles, labels, ncol=2, fontsize=16)
+                ax[1, 1].legend(handles, labels, ncol=2, fontsize=14)
 
                 ax[1, 1].set_xlabel('Time [hr]')
                 ax[1, 1].set_ylabel('Pressure and Derivative [bar]')
@@ -114,22 +117,22 @@ def main():
                     ax[0, 1].plot(qs, pq_linear_reg, 'k')
                 ax[0, 1].set_xlabel('Rate [$m^3$/D]')
                 ax[0, 1].set_ylabel('Pressure [bar]')
-                ax[0, 1].legend(fontsize=16)
+                ax[0, 1].legend(fontsize=14)
                 ax[0, 1].grid(visible=True)
 
-                c1 = next(ax[0, 0]._get_lines.prop_cycler)['color']
+                c1 = next(colors_linear_plots)['color']
                 ax[1, 0].plot(sim.t[index_step_start:] / 3600, sim.q_hist[index_step_start:] * 3600 * 24,
-                              color=c1, label='Step_' + str(i + 1))
+                              color=c1, label='Step_' + str(len(detector.dp_all_steps)))
                 ax[1, 0].set_ylabel('Rate [$m^3$/D]')
                 ax[1, 0].set_xlabel('Elapsed Time [hr]')
-                ax[1, 0].legend(fontsize=16)
+                ax[1, 0].legend(fontsize=14)
                 ax[1, 0].grid(visible=True)
 
                 ax[0, 0].plot(sim.t[index_step_start:] / 3600, sim.p_bh[index_step_start:] / 1e5,
-                              color=c1, label='Step_' + str(i + 1))
+                              color=c1, label='Step_' + str(len(detector.dp_all_steps)))
                 ax[0, 0].set_ylabel('Pressure [bar]')
                 ax[0, 0].set_xlabel('Time [hr]')
-                ax[0, 0].legend(fontsize=16)
+                ax[0, 0].legend(fontsize=14)
                 ax[0, 0].grid(visible=True)
                 fig.canvas.draw()
                 fig.tight_layout()
