@@ -24,8 +24,25 @@ def main():
     t_max = step_dt * n_steps * 2.0  # total simulation time, s
     dt = 10  # time step of main loop, s
 
+    # Define simulation physical parameters
+    permeability = 100 * 1e-15  # matrix permeability, m^2
+    porosity = 0.3  # reservoir porosity, fraction
+    viscosity = 0.00032  # fluid viscosity, Pa.s
+    compressibility = 8.6e-10  # combined compressibility of the rock and fluid, Pa^-1
+    formation_volume_factor = 1.03  # formation volume factor, m^3/stm^3
+    reservoir_pressure = 250e5  # far-field reservoir pressure, Pa
+    well_radius = 0.1  # wellbore radius, m
+    outer_radius = 10000  # radial distance to the reservoir outer boundary, m
+    thickness = 15  # reservoir thickness, m
+    skin = 0  # dimensionless skin factor
+    wellbore_storage = 1.5e-7  # wellbore storage constant, m^3/Pa
+    fracture_opening_pressure = 380e5  # fracture opening pressure, Pa
+    fracture_half_length = 5  # fracture half-length, m
+
     # Create ReservoirSimulator, RateController and PressureDeviationDetector objects
-    sim = ReservoirSimulator(dt, t_max, use_pressure_dependent_permeability=True)
+    sim = ReservoirSimulator(dt, t_max, permeability, porosity, viscosity, compressibility, formation_volume_factor,
+                             reservoir_pressure, well_radius, outer_radius, thickness, skin, wellbore_storage,
+                             fracture_opening_pressure, fracture_half_length, use_pressure_dependent_permeability=True)
     controller = RateController(step_dq, step_dt, n_steps, min_dq)
     detector = PressureDeviationDetector(step_dq)
 

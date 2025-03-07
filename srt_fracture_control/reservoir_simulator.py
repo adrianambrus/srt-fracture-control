@@ -37,7 +37,7 @@ class ReservoirSimulator:
         The rate in m^3/s. Sign convention is negative for injection and positive for production.
     c_wb: float
         The wellbore storage constant in m^3/Pa.
-    fracture_opening_pressure: float
+    p_frac: float
         The fracture opening pressure in Pa.
     xf: float
         The fracture half-length in m.
@@ -97,24 +97,43 @@ class ReservoirSimulator:
     def __init__(self,
                  dt=10,
                  t_max=150 * 3600,
+                 k = 100 * 1e-15,
+                 phi = 0.3,
+                 mu = 0.00032,
+                 c = 8.6e-10,
+                 b = 1.03,
+                 p_res = 250e5,
+                 ri = 0.1,
+                 ro = 10000,
+                 h = 15,
+                 s = 0,
+                 c_wb = 1.5e-7,
+                 p_frac = 380e5,
+                 xf = 5,
                  use_pressure_dependent_permeability=True
                  ):
         ## Set physical parameters
-        self.k = 100 * 1e-15
-        self.phi = 0.3
-        self.mu = 0.00032
-        self.c = 8.6e-10
-        self.b = 1.03
+        self.k = k
+        self.phi = phi
+        self.mu = mu
+        self.c = c
+        self.b = b
         self.alpha = self.k / (self.mu * self.phi * self.c)
-        self.p_res = 250e5
-        self.ri = 0.1
-        self.ro = 10000
-        self.h = 15
-        self.s = 0
+        self.p_res = p_res
+        self.ri = ri
+        self.ro = ro
+        self.h = h
+        self.s = s
         self.q = 0
-        self.c_wb = 1.5e-7
-        self.fracture_opening_pressure = 380e5
-        self.xf = 5
+        self.c_wb = c_wb
+        self.p_frac = p_frac
+        self.xf = xf
+
+        if ri >= ro:
+            raise ValueError('The wellbore radius needs to be smaller than the reservoir outer boundary radius.')
+
+        if xf >= ro:
+            raise ValueError('The fracture half-length needs to be smaller than the reservoir outer boundary radius.')
 
         ## Set simulation parameters
         self.t_max = t_max
@@ -173,7 +192,7 @@ class ReservoirSimulator:
         k_ratio_min = 1.0  # minimum permeability ratio
         k_ratio_max = 4.0  # maximum permeability ratio
         a = 0.008  # the exponent of the exponential function
-        kp = self.k * np.maximum(np.minimum(np.exp(a * (p - self.fracture_opening_pressure) / 1e5), k_ratio_max),
+        kp = self.k * np.maximum(np.minimum(np.exp(a * (p - self.p_frac) / 1e5), k_ratio_max),
                                  k_ratio_min)
 
         return kp
@@ -288,16 +307,18 @@ class ReservoirSimulator:
                     self.x[i + 1] - self.x[i]) / (self.x[i + 1] - self.x[i - 1])
         a_matrix[self.nx - 1, self.nx - 1] = 1
 
+        # account for boundary condition type in the tridiagonal matrix coefficients
         if self.outer_boundary_condition == 0:
             a_matrix[self.nx - 1, self.nx - 2] = - 1
 
+        # account for wellbore storage in the tridiagonal matrix coefficients
         a_matrix[0, 0] = - 1 - self.dx * self.mu * self.c_wb * (1 - self.s * self.ri / self.dx) / (
                 2 * np.pi * self.ri * self.h * self.k * dt)
         a_matrix[0, 1] = 1 - self.mu * self.c_wb * self.s / (2 * np.pi * self.h * self.k * dt)
 
         # Solver inner loop
         for n in range(Nt):
-            # assemble right-hand side terms
+            # assemble right-hand side terms, accounting for wellbore storage and boundary condition type
             b = np.zeros((self.nx, 1)).reshape(-1)
             b[0] = self.dx * self.mu / (2 * np.pi * self.ri * self.h * self.k * dt) * (
                     self.q * self.b * dt - self.c_wb * (p[0] + self.s * self.ri / self.dx * (p[1] - p[0])))
@@ -382,14 +403,16 @@ class ReservoirSimulator:
                                              self.x[i + 1] - self.x[i - 1])
             a_matrix[self.nx - 1, self.nx - 1] = 1
 
+            # account for boundary condition type in the tridiagonal matrix coefficients
             if self.outer_boundary_condition == 0:
                 a_matrix[self.nx - 1, self.nx - 2] = - 1
 
+            # account for wellbore storage in the tridiagonal matrix coefficients
             a_matrix[0, 0] = - 1 - self.dx * self.mu * self.c_wb * (1 - self.s * self.ri / self.dx) / (
                     2 * np.pi * self.ri * self.h * kp[0] * dt)
             a_matrix[0, 1] = 1 - self.mu * self.c_wb * self.s / (2 * np.pi * self.h * kp[0] * dt)
 
-            # assemble right-hand side terms
+            # assemble right-hand side terms, accounting for wellbore storage and boundary condition type
             b = np.zeros((self.nx, 1)).reshape(-1)
             b[0] = self.dx * self.mu / (2 * np.pi * self.ri * self.h * kp[0] * dt) * (
                     self.q * self.b * dt - self.c_wb * (
@@ -449,7 +472,6 @@ class ReservoirSimulator:
         df = pd.DataFrame(
             {"Time (hr)": np.array(self.t) / 3600, "Pressure (bar)": np.array(self.p_bh.reshape(-1)) / 1e5,
              "Rate (m3/D)": np.array(self.q_hist.reshape(-1)) * 3600 * 24}).dropna()
-        df = df.replace('', np.NaN)
 
         writer = pd.ExcelWriter(f'{name}.xlsx', engine='openpyxl')
         df.to_excel(writer, index=False)
