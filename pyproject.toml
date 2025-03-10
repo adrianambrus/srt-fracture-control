@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "srt-fracture-control"
+version = "0.1.0"
+description = "A Python library for automated monitoring and control of induced fracturing and fracture opening in injection wells using step rate tests and pressure transient analysis."
+readme = "README.md"
+authors = [
+    { name = "A. Ambrus"},
+    { name = "U.J.F. Aarsnes"},
+]
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering",
+]
+keywords = ["automated-rate-control","step-rate-test","fracture-opening-pressure","pressure-transient-analysis","bourdet-derivative","safe-operating-envelope"]
+dependencies = [
+    "numpy>=2.2.3",
+    "openpyxl>=3.1.5",
+    "pandas>=2.2.3",
+    "scipy>=1.15.2"
+]
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://github.com/adrianambrus/srt-fracture-control"
+Repository = "https://github.com/adrianambrus/srt-fracture-control.git"
+Issues = "https://github.com/adrianambrus/srt-fracture-control/issues"
