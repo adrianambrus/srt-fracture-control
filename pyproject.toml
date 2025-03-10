@@ -23,10 +23,10 @@ classifiers = [
 ]
 keywords = ["automated-rate-control","step-rate-test","fracture-opening-pressure","pressure-transient-analysis","bourdet-derivative","safe-operating-envelope"]
 dependencies = [
-    "numpy>=2.2.3",
+    "numpy>=1.21",
     "openpyxl>=3.1.5",
-    "pandas>=2.2.3",
-    "scipy>=1.15.2"
+    "pandas>=1.3.0",
+    "scipy>=1.10"
 ]
 requires-python = ">=3.8"
 
