@@ -2,6 +2,10 @@
 
 A Python library for automated monitoring and control of induced fracturing and fracture opening in injection wells using step rate tests and pressure transient analysis (PTA). The library provides methods for detection of induced fracturing and fracture opening based on PTA and safe operating envelope (SOE), and for control of injection rate to respond to detected deviations from the SOE. The library also contains a transient single-phase reservoir flow simulator with proxy modeling of fracture permeability, which can be used to test the fracture monitoring and control methods in synthetic well test scenarios. The library is based on the methodology described in the paper: [Automated Rate Control to Prevent Induced Fracturing and Fracture Opening Monitored with Step Rate Tests](https://doi.org/10.2118/220016-MS).
 
+Usage examples provided in:
+
+<a href="https://colab.research.google.com/drive/1ecY9KGa0Ndlg-13B04Ec6X9tE9UDHO_X?authuser=0#scrollTo=zmF804yggfjf"> Synthetic step rate test example <img src="https://colab.research.google.com/assets/colab-badge.svg" height=16px></a> <br>
+<a href="https://colab.research.google.com/drive/1TJzfjieYJOt6c9E-krnyiutNYRJmGS8Q#scrollTo=AMap_Xh0nbax"> Synthetic step rate test example with induced fracture monitoring and control <img src="https://colab.research.google.com/assets/colab-badge.svg" height=16px></a> <br>
 
 ## Installation
 
