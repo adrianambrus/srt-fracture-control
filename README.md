@@ -1,6 +1,6 @@
 # srt-fracture-control
 
-A Python library for automated monitoring and control of induced fracturing and fracture opening in injection wells using step rate tests and pressure transient analysis (PTA). The library provides methods for detection of induced fracturing and fracture opening based on PTA and safe operating envelope (SOE), and for control of injection rate to respond to detected deviations from the SOE. The library also contains a transient single-phase reservoir flow simulator with proxy modeling of fracture permeability, which can be used to test the fracture monitoring and control methods in synthetic well test scenarios. The library is based on the methodology described in the paper: [Automated Rate Control to Prevent Induced Fracturing and Fracture Opening Monitored with Step Rate Tests](https://doi.org/10.2118/220016-MS).
+A Python library for automated monitoring and control of induced fracturing and fracture opening in injection wells using step rate tests and pressure transient analysis (PTA). The library provides methods for detection of induced fracturing and fracture opening based on PTA and safe operating envelope (SOE), and for control of injection rate to respond to detected deviations from the SOE. The library also contains a transient single-phase 1D numerical reservoir simulator with proxy modeling of fracture permeability, which can be used to test the fracture monitoring and control methods in synthetic well test scenarios. The library is based on the methodology described in the paper: [Automated Rate Control to Prevent Induced Fracturing and Fracture Opening Monitored with Step Rate Tests](https://doi.org/10.2118/220016-MS).
 
 Usage examples provided in:
 
@@ -17,9 +17,9 @@ pip install srt-fracture-control
 
 ## Usage
 
-### Reservoir simulator
+### 1D numerical reservoir simulator
 
-- Solves the radial diffusivity equation for single-phase flow using the Crank-Nicolson finite difference method
+- Solves the 1D radial diffusivity equation for single-phase flow using the Crank-Nicolson finite difference method
 - Takes the rate as input and returns reservoir pressure and well bottom-hole pressure as the output
 - Models with constant and pressure-dependent reservoir permeability
 - Results can be exported to Excel and CSV formats
@@ -106,9 +106,9 @@ ax.set_ylabel('Pressure and Derivative [bar]')
 detector.export_pressure_and_derivative_to_excel('PressureAndDerivative')
 ```
 ### Rate controller
-- Adjusts injection rate in a step rate test
+- Automatically adjusts injection rate in a step rate test
 - For normal case (derivative inside SOE), the rate is increased
-- When fracturing is detected (derivative outside SOE), the rate is decreased
+- When fracturing is detected (derivative outside SOE), the rate is decreased to allow the pressure to stabilize below the fracture opening pressure
 
 ```python
 from srt_fracture_control import RateController
