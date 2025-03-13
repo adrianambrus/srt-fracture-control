@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "srt-fracture-control"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Python library for automated monitoring and control of induced fracturing and fracture opening in injection wells using step rate tests and pressure transient analysis."
 readme = "README.md"
 authors = [
