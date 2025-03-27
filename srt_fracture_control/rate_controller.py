@@ -80,9 +80,9 @@ class RateController:
 
     def increase_rate_step(self, factor=1.5):
         """
-        React to a deviation from the safe operating envelope.
+        Increase the rate step by a multiplication factor.
 
-        This function applies a multiplication factor greater than 1 to reduce the current rate step.
+        This function applies a multiplication factor greater than 1 to increase the current rate step.
         The rate step is limited to a pre-defined maximum value.
 
         Parameters
